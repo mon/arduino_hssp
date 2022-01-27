@@ -1,26 +1,22 @@
 # arduino_hssp
 Cypress PSoC® 1 Device hacking using an Arduino
 
-This is a fork of the [original port](https://github.com/miracoli/arduino_hssp)
-of the code found at <http://www.cypress.com/?rID=2906> (AN44168, Revision
-2.30) to the Arduino platform by Dirk Petrautzki.
+This is a fork of trou's fork of miracoli's port of the code found at
+<http://www.cypress.com/?rID=2906> (AN44168, Revision 2.30) to the Arduino
+platform by Dirk Petrautzki.
 
-Besides implementing the standard commands for flashing a PSoC, it includes the
-following extra commands:
-* `Cmnd_STK_READ_REG          0x79`
-* `Cmnd_STK_WRITE_REG         0x80`
-* `Cmnd_STK_READ_MEM          0x81`
-* `Cmnd_STK_WRITE_MEM         0x82`
-* `Cmnd_STK_EXEC_OPCODES      0x83`
-* `Cmnd_STK_RUN_CSUM          0x84`
-* `Cmnd_STK_START_CSUM        0x85`
-* `Cmnd_STK_READ_SECURITY     0x86`
+It also includes the python interfacing code, originally from 
+[cypress_psoc_tools](https://github.com/trou/cypress_psoc_tools).
 
-Which are very helpful to dump the protected flash of the PSoC.
+It adds support for multiple banks when reading memory, and (very very
+partially) adds Python3 support.
 
+Thanks my test subject not enabling protection bits, a normal flash dump
+works fine.
 ## Usage
 
-Clone the code into a folder called 'arduino_hssp', run `make && make_upload` 
+Clone the code into a folder called 'arduino_hssp', run `make && make_upload` or
+just use the Arduino IDE.
 
 Connect your PSoC 1 device as follows
 (can be changed in issp_defs.h):
@@ -30,10 +26,18 @@ Connect your PSoC 1 device as follows
 * `XRES_PIN` -> 4
 * `TARGET_VDD` -> 11
 
-Run the code and check serial output.
+Install requirements (`pip install tqdm pyserial`).  
+Run the code and check serial output. The flash will be saved to `flash.bin`.
+
+I didn't have much luck with automatic power toggling - if you get failure to
+init, try power cycling the arduino and your target board, then quickly (within
+~15 seconds) perform the dump.
+
+If the protection debugging shows banks as being protected, the resulting dump
+will be invalid. You should try using the original project's CRC attack.
 
 ## Project status
-Tested and working with Arduino Uno and CY8C21434.
+Tested and working with Arduino Leonardo and CY8C22345.
 
-## Example hack
+## Previous writeup
 <https://syscall.eu/blog/2018/03/12/aigo_part2/>
