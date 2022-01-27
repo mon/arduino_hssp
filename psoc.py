@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import struct
 import sys
@@ -7,27 +7,29 @@ import os
 from random import randint
 import serial
 
+from tqdm import tqdm, trange
+
 class SyncFailed(Exception):
     pass
 
 def print_nocr(s):
-    print s,
+    print(s, end=' ')
     sys.stdout.flush()
 
 def hexdump(src, length=16, sep='.'):
     FILTER = ''.join([(len(repr(chr(x))) == 3) and chr(x) or sep for x in range(256)])
     lines = []
-    for c in xrange(0, len(src), length):
+    for c in range(0, len(src), length):
         chars = src[c:c+length]
         hex = ' '.join(["%02x" % ord(x) for x in chars])
         if len(hex) > 24:
             hex = "%s %s" % (hex[:24], hex[24:])
         printable = ''.join(["%s" % ((ord(x) <= 127 and FILTER[ord(x)]) or sep) for x in chars])
         lines.append("%08x:  %-*s  |%s|\n" % (c, length*3, hex, printable))
-    print ''.join(lines)
+    print(''.join(lines))
 
 global ser
-ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.5)  # open serial port
+ser = serial.Serial('COM10', 115200, timeout=0.5)  # open serial port
 
 REGS = { 0xF0 : "A", 0xF1 : "F1",
 0xF2 : "F2", 0xF3 : "X", 0xF4 : "PC", 0xF5 : "PC", 0xF6 : "SP", 0xF7 :
@@ -37,34 +39,34 @@ REGS = { 0xF0 : "A", 0xF1 : "F1",
 def get_n_resp(n):
     insync = ser.read(1) # STK_INSYNC
     # check received ack
-    if insync != '\x14':
-        print "read byte failed"
-        print repr(insync)
+    if insync != b'\x14':
+        print("read byte failed")
+        print(repr(insync))
         exit(1)
     data = []
     for i in range(0, n):
         data.append(ser.read(1))
 
     ok = ser.read(1) # STK_OK
-    if ok != '\x10':
-        print "read %d bytes failed" % n
-        print repr(ok)
+    if ok != b'\x10':
+        print("read %d bytes failed" % n)
+        print(repr(ok))
         exit(1)
     return data
 
 def get_byte_resp():
     insync = ser.read(1) # STK_INSYNC
     # check received ack
-    if insync != '\x14':
-        print "read byte failed"
-        print repr(insync)
+    if insync != b'\x14':
+        print("read byte failed")
+        print(repr(insync))
         exit(1)
     data = ser.read(1)
     ok = ser.read(1) # STK_OK
 
-    if ok != '\x10':
-        print "read byte failed"
-        print repr(ok)
+    if ok != b'\x10':
+        print("read byte failed")
+        print(repr(ok))
         exit(1)
     return data
 
@@ -73,7 +75,7 @@ def get_empty_resp():
     ok = ser.read(1) # STK_OK
 
     # check received ack
-    if insync != '\x14' or ok != '\x10':
+    if insync != b'\x14' or ok != b'\x10':
         raise SyncFailed("%s, %s"% (repr(insync), repr(ok)))
 
 def sync_arduino():
@@ -81,62 +83,63 @@ def sync_arduino():
     while True:
         try:
             # get in sync with the AVR
-            ser.write('\x30\x20') # STK_GET_SYNC
+            ser.write(b'\x30\x20') # STK_GET_SYNC
             get_empty_resp()
         except SyncFailed:
             print_nocr("KO ")
             pass
         else:
-            print "OK"
+            print("OK")
             break
 
 def reset_psoc(quiet=False):
     while True:
         if not quiet:
             print_nocr('Resetting PSoC: ')
-        ser.write("\x49")
+        ser.write(b"\x49")
         res = ser.read(1)
-        if res != "\x10":
+        if res != b"\x10":
             if not quiet:
                 print_nocr("KO ")
             continue
         else:
             if not quiet:
-                print "OK"
+                print("OK")
             return
 
 def send_vectors():
-    ser.write("\x50")
+    ser.write(b"\x50")
     res = get_byte_resp()
-    if res != "\x00":
+    if res != b"\x00":
+        print(res)
         raise RuntimeError("init failed")
 
 def write_reg(reg, value):
-    ser.write("\x80"+chr(reg)+chr(value)+"\x20")
+    ser.write(bytearray([0x80, reg, value, 0x20]))
     get_empty_resp()
 
 def read_reg(reg):
-    ser.write("\x79"+chr(reg)+"\x20")
+    ser.write(bytearray([0x79,reg,0x20]))
     return get_byte_resp()
 
 def read_regb(reg):
     return ord(read_reg(reg)[0])
 
 def read_ram(addr):
-    ser.write("\x81"+chr(addr)+"\x20")
+    ser.write(bytearray([0x81, addr, 0x20]))
     return get_byte_resp()
 
 def read_ramb(addr):
-    return ord(read_ram(addr)[0])
+    return read_ram(addr)[0]
 
 
 def write_ram(addr, value):
-    ser.write("\x82"+chr(addr)+chr(value)+"\x20")
+    ser.write(b"\x82"+chr(addr)+chr(value)+"\x20")
     get_empty_resp()
 
 def dump_regs():
     for reg in range(0xF0, 0xFF):
-        print "%2s [%02X] %02X " % (REGS[reg], reg, ord(read_reg(reg)[0]))
+        print("%2s [%02X] %02X " % (REGS[reg], reg, ord(read_reg(reg)[0])))
 
 def switch_ram_page(pg):
     if pg == 1:
@@ -167,12 +170,12 @@ def dump_ram(fname):
         hexdump(ram)
 
 def exec_opcodes(opc):
-    ser.write("\x83"+opc+"\x20")
+    ser.write(b"\x83"+opc+b"\x20")
     get_empty_resp()
 
 def identify_regs():
     val = randint(0, 255)
-    print "A <= %x" % val
+    print("A <= %x" % val)
     write_reg(0xF0, val)
     dump_regs()
     # Helper to identify registers
@@ -180,47 +183,47 @@ def identify_regs():
     exec_opcodes("\x01\x01\x30") # ADD A, A
     exec_opcodes("\x5C\x40\x30") # MOX X, A
     exec_opcodes("\x7D\x70\x30") # JMP 0x7030
-    print "-----"
+    print("-----")
     dump_regs()
 
 def try_romx_read():
     # Read Addr 0 with ROMX
     data = []
-    for i in range(0, 8192):
+    for i in range(0, 16384):
         sys.stdout.flush()
         write_reg(0xF0, i>>8) # A = 0
         write_reg(0xF3, i&0xFF) # X = 0
-        exec_opcodes("\x28\x30\x40") # ROMX
+        exec_opcodes(b"\x28\x30\x40") # ROMX
         byte = read_reg(0xF0)
-        print "%02x" % ord(byte[0]),
+        print("%02x" % byte[0], end=' ')
         data.append(byte)
-    print "\n"
-    print repr(data)
+    print("\n")
+    print(repr(data))
     with open('flash', 'wb+') as out:
-        out.write("".join(data))
+        out.write(b"".join(data))
 
 def read_sig():
-    print 'Reading Signature'
-    ser.write("\x75\x20")
+    print('Reading Signature')
+    ser.write(b"\x75\x20")
     sig = get_n_resp(2)
-    print "Sig : %02X %02X" % (ord(sig[0]), ord(sig[1]))
+    print("Sig : %02X %02X" % (ord(sig[0]), ord(sig[1])))
 
 def read_block(addr):
-    ser.write("\x55"+struct.pack(">H", addr)+"\x20")
+    ser.write(b"\x55"+struct.pack(">H", addr)+"\x20")
     get_empty_resp()
     res =  read_ram(0xF8)
-    print "%04X: %02x" % (addr, ord(res[0]))
+    print("%04X: %02x" % (addr, ord(res[0])))
     return res
 
 # Reads data from RAM @ 0x80
 def read_0x80_data(length):
-    print "read page (0x74)"
+    print("read page (0x74)")
     # Read 0x00 * 256 + 0x60 bytes
     # F == flash
-    ser.write("\x74"+struct.pack('>H', length)+"\x20")
+    ser.write(b"\x74"+struct.pack('>H', length)+"\x20")
     res = ser.read(1)
     if res == "\x11":
-        print "failed"
+        print("failed")
         exit(1)
     data = []
     for i in range(0, length):
@@ -228,9 +231,9 @@ def read_0x80_data(length):
     return data
 
 def read_security_data():
-    ser.write("\x86")
-    if get_byte_resp() != "\x00":
-        print "Reading security data failed"
+    ser.write(b"\x86")
+    if (b := get_byte_resp()) != b"\x00":
+        print(f"Reading security data failed ({b})")
         exit(1)
 
     data = []
@@ -238,11 +241,11 @@ def read_security_data():
         data.append(read_ramb(i))
     sec_data = {0: 'unprotected', 1: 'read protect', 2: 'Disable external write', 3: 'Disable internal write'}
     for i in range(0, 128):
-        print "block %02x : %s" % (i, sec_data[data[i*2/8]>>(6-(i%4)*2)&3])
+        print("block %02x : %s" % (i, sec_data[data[i*2//8]>>(6-(i%4)*2)&3]))
 
 
 def cold_boot_step():
-    print "Trying checksum & reset"
+    print("Trying checksum & reset")
     # Try to checksum
     last = [0, 0]
     data = []
@@ -251,18 +254,18 @@ def cold_boot_step():
         try:
             reset_psoc(quiet=True)
             send_vectors()
-            ser.write("\x85"+struct.pack(">I", delay))
+            ser.write(b"\x85"+struct.pack(">I", delay))
             res = ser.read(1)
             val = (read_ramb(0xF9) << 8) | read_ramb(0xF8)
         except:
             break
         data.append((val-last[0])&0xFF)
-        print "%d (+%d): %04X (+%02X) " % (delay, delay-last[1], val, (val-last[0])&0xFF)
+        print("%d (+%d): %04X (+%02X) " % (delay, delay-last[1], val, (val-last[0])&0xFF))
         if last[0] != val:
             last[0] = val
             last[1] = delay
         #dump_ram("ram_csum_%05d" % delay)
-    print "Dumping"
+    print("Dumping")
     with open("flash", 'wb+') as out:
         out.write(bytearray(data))
 
@@ -274,27 +277,27 @@ def full_flash_dump():
             try:
                 reset_psoc(quiet=True)
                 send_vectors()
-                ser.write("\x85"+struct.pack(">I", delay))
+                ser.write(b"\x85"+struct.pack(">I", delay))
                 res = ser.read(1)
             except Exception as e:
-                print e
+                print(e)
                 ser.close()
                 os.system("timeout -s KILL 1s picocom -b 115200 /dev/ttyACM0 2>&1 > /dev/null")
                 ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.5)  # open serial port
                 continue
-            print "%05d %02X %02X %02X" % (delay,
+            print("%05d %02X %02X %02X" % (delay,
                                            read_regb(0xf1),
                                            read_ramb(0xf8),
-                                           read_ramb(0xf9))
+                                           read_ramb(0xf9)))
 
 def block_csum(numblocks=0):
-    ser.write("\x84"+chr(numblocks))
+    ser.write(b"\x84"+chr(numblocks))
     resp = get_n_resp(2)
     return (ord(resp[1][0])<<8) | ord(resp[0][0])
 
 def dump_blocks_csums():
     for i in range(1, 129):
-        print "block %03d : 0x%04X" % (i, block_csum(i))
+        print("block %03d : 0x%04X" % (i, block_csum(i)))
 
 
 def csum_at(delay, count):
@@ -303,10 +306,10 @@ def csum_at(delay, count):
         try:
             reset_psoc(quiet=True)
             send_vectors()
-            ser.write("\x85"+struct.pack(">I", delay))
+            ser.write(b"\x85"+struct.pack(">I", delay))
             res = ser.read(1)
         except Exception as e:
-            print e
+            print(e)
             ser.close()
             os.system("timeout -s KILL 1s picocom -b 115200 /dev/ttyACM0 2>&1 > /dev/null")
             ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.5)  # open serial port
@@ -321,14 +324,14 @@ def dump_pin():
     for delay in range(145495, 145719, 16):
         csum = csum_at(delay, 1)
         byte = (csum-last_csum)&0xFF
-        print "%05d %04x (%04x) => %02x" % (delay, csum, last_csum, byte)
+        print("%05d %04x (%04x) => %02x" % (delay, csum, last_csum, byte))
         pin_bytes.append(byte)
         last_csum = csum
-    print "PIN: ",
+    print("PIN: ", end=' ')
     for i in range(0, len(pin_bytes)):
         if pin_bytes[i] in pin_map:
-            print pin_map[pin_bytes[i]],
-    print
+            print(pin_map[pin_bytes[i]], end=' ')
+    print()
 
 
 def sample_csum():
@@ -349,23 +352,75 @@ def sample_csum():
                 try:
                     reset_psoc(quiet=True)
                     send_vectors()
-                    ser.write("\x85"+struct.pack(">I", delay+delta))
+                    ser.write(b"\x85"+struct.pack(">I", delay+delta))
                     res = ser.read(1)
                 except Exception as e:
-                    print e
+                    print(e)
                     ser.close()
                     os.system("timeout -s KILL 1s picocom -b 115200 /dev/ttyACM0 2>&1 > /dev/null")
                     ser = serial.Serial('/dev/ttyACM0', 115200, timeout=0.5)  # open serial port
                     continue
-                print "%05d %02X %02X %02X" % (delay+delta,
+                print("%05d %02X %02X %02X" % (delay+delta,
                                                read_regb(0xf1),
                                                read_ramb(0xf8),
-                                               read_ramb(0xf9))
+                                               read_ramb(0xf9)))
+
+NUM_BANKS = 2
+BLOCKS_PER_BANK = 128
+SECURITY_BYTES_PER_BANK = 32
+BYTES_PER_BLOCK = 64
+
+def set_block_num(block, bank):
+    word = (block * BYTES_PER_BLOCK)# + (bank * BLOCKS_PER_BANK * BYTES_PER_BLOCK)
+    ser.write(
+        b'\x55' +
+        struct.pack('<H', word) +
+        struct.pack('B', bank) +
+        b'\x20')
+    get_empty_resp()
+
+def read_64():
+    length = BYTES_PER_BLOCK
+    # F == flash
+    ser.write(b"\x74"+struct.pack('>H', length)+b"F\x20")
+    res = ser.read(1)
+    if res != b"\x14":
+        print("failed")
+        exit(1)
+    data = ser.read(length)
+    tqdm.write(str(data))
+    ok = ser.read(1)
+    if ok != b'\x10':
+        print("not ok")
+        exit(1)
+    return data
+
+def read_flash():
+    flash = b''
+    for b in trange(NUM_BANKS):
+        for i in trange(BLOCKS_PER_BANK):
+            set_block_num(i, b)
+            flash += read_64()
+
+    with open('flash.bin', 'wb') as f:
+        f.write(flash)
+
+def finish():
+    ser.write(b'\x51\x20')
+    get_empty_resp()
+
 sync_arduino()
 reset_psoc()
 send_vectors()
+read_sig()
+read_security_data()
+read_flash()
 
+finish()
 
-dump_pin()
+# read_security_data()
+# try_romx_read()
+
+#dump_pin()
 #sample_csum()
 #dump_blocks_csums()
