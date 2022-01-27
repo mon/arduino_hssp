@@ -2,19 +2,19 @@
 //
 // This software is owned by Cypress Semiconductor Corporation (Cypress)
 // and is protected by and subject to worldwide patent protection (United
-// States and foreign), United States copyright laws and international 
-// treaty provisions. Cypress hereby grants to licensee a personal, 
-// non-exclusive, non-transferable license to copy, use, modify, create 
-// derivative works of, and compile the Cypress Source Code and derivative 
-// works for the sole purpose of creating custom software in support of 
-// licensee product to be used only in conjunction with a Cypress integrated 
-// circuit as specified in the applicable agreement. Any reproduction, 
-// modification, translation, compilation, or representation of this 
-// software except as specified above is prohibited without the express 
+// States and foreign), United States copyright laws and international
+// treaty provisions. Cypress hereby grants to licensee a personal,
+// non-exclusive, non-transferable license to copy, use, modify, create
+// derivative works of, and compile the Cypress Source Code and derivative
+// works for the sole purpose of creating custom software in support of
+// licensee product to be used only in conjunction with a Cypress integrated
+// circuit as specified in the applicable agreement. Any reproduction,
+// modification, translation, compilation, or representation of this
+// software except as specified above is prohibited without the express
 // written permission of Cypress.
 //
-// Disclaimer: CYPRESS MAKES NO WARRANTY OF ANY KIND,EXPRESS OR IMPLIED, 
-// WITH REGARD TO THIS MATERIAL, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+// Disclaimer: CYPRESS MAKES NO WARRANTY OF ANY KIND,EXPRESS OR IMPLIED,
+// WITH REGARD TO THIS MATERIAL, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 // Cypress reserves the right to make changes without further notice to the
 // materials described herein. Cypress does not assume any liability arising
@@ -55,14 +55,14 @@ unsigned char  fIsError;
 
 // ============================================================================
 // RunClock()
-// Description: 
-// Run Clock without sending/receiving bits. Use this when transitioning from 
+// Description:
+// Run Clock without sending/receiving bits. Use this when transitioning from
 // write to read and read to write "num_cycles" is number of SCLK cycles, not
 // number of counter cycles.
 //
-// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some 
+// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some
 // processors may need to have delays added after setting SCLK low and setting
-// SCLK high in order to not exceed this specification. The maximum frequency 
+// SCLK high in order to not exceed this specification. The maximum frequency
 // of SCLK should be measured as part of validation of the final program
 //
 // ============================================================================
@@ -82,9 +82,9 @@ void RunClock(unsigned int iNumCycles)
 // Clocks the SCLK pin (high-low-high) and reads the status of the SDATA pin
 // after the rising edge.
 //
-// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some 
+// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some
 // processors may need to have delays added after setting SCLK low and setting
-// SCLK high in order to not exceed this specification. The maximum frequency 
+// SCLK high in order to not exceed this specification. The maximum frequency
 // of SCLK should be measured as part of validation of the final program
 //
 // Returns:
@@ -101,7 +101,7 @@ unsigned char bReceiveBit(void)
     else {
         return(0);
     }
-}          
+}
 
 // ============================================================================
 // bReceiveByte()
@@ -118,7 +118,7 @@ unsigned char bReceiveByte(void)
         bCurrByte = (bCurrByte<<1) + bReceiveBit();
     }
     return(bCurrByte);
-}          
+}
 
 
 // ============================================================================
@@ -127,9 +127,9 @@ unsigned char bReceiveByte(void)
 //    bCurrByte   the byte that contains the bits to be sent.
 //    bSize       the number of bits to be sent. Valid values are 1 to 8.
 //
-// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some 
+// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some
 // processors may need to have delays added after setting SCLK low and setting
-// SCLK high in order to not exceed this specification. The maximum frequency 
+// SCLK high in order to not exceed this specification. The maximum frequency
 // of SCLK should be measured as part of validation of the final program
 //
 // There is no returned value.
@@ -189,14 +189,14 @@ void SendVector(const unsigned char* bVect, unsigned int iNumBits)
 // fDetectHiLoTransition()
 // Waits for transition from SDATA = 1 to SDATA = 0.  Has a 100 msec timeout.
 // TRANSITION_TIMEOUT is a loop counter for a 100msec timeout when waiting for
-// a high-to-low transition. This is used in the polling loop of 
+// a high-to-low transition. This is used in the polling loop of
 // fDetectHiLoTransition(). The timing of the while(1) loops can be calculated
-// and the number of loops is counted, using iTimer, to determine when 100 
+// and the number of loops is counted, using iTimer, to determine when 100
 // msec has passed.
 //
-// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some 
+// SCLK cannot run faster than the specified maximum frequency of 8MHz. Some
 // processors may need to have delays added after setting SCLK low and setting
-// SCLK high in order to not exceed this specification. The maximum frequency 
+// SCLK high in order to not exceed this specification. The maximum frequency
 // of SCLK should be measured as part of validation of the final program
 //
 // Returns:
@@ -209,7 +209,7 @@ signed char fDetectHiLoTransition(void)
     // more than 100 msec.  Making this static makes the loop run a faster.
     // This is really a processor/compiler dependency and it not needed.
     static unsigned int iTimer;
-    
+
     // NOTE:
     // These loops look unconventional, but it is necessary to check SDATA_PIN
     // as shown because the transition can be missed otherwise, due to the
@@ -228,12 +228,12 @@ signed char fDetectHiLoTransition(void)
         }
     }
 
-	
+
 	// Generate Clocks and wait for Target to pull SDATA Low again
     iTimer = millis() + TRANSITION_TIMEOUT;              // reset the timeout counter
     while(1) {
         SCLKLow();
-        if (!fSDATACheck()) {   // exit once SDATA returns LOW 
+        if (!fSDATACheck()) {   // exit once SDATA returns LOW
             break;
         }
         SCLKHigh();
@@ -263,26 +263,26 @@ void fXRESInitializeTargetForISSP(void)
     SetSCLKStrong();
     SCLKLow();
     SetXRESStrong();
-  
+
     // Cycle reset and put the device in programming mode when it exits reset
     AssertXRES();
     delayMicroseconds(XRES_CLK_DELAY);
     DeassertXRES();
     //
-    // !!! NOTE: 
+    // !!! NOTE:
     //  The timing spec that requires that the first Init-Vector happen within
     //  1 msec after the reset/power up. For this reason, it is not advisable
-    //  to separate the above RESET_MODE or POWER_CYCLE_MODE code from the 
+    //  to separate the above RESET_MODE or POWER_CYCLE_MODE code from the
     //  Init-Vector instructions below. Doing so could introduce excess delay
     //  and cause the target device to exit ISSP Mode.
 
     // Here we send the magic that transitions into prog mode
-    SendVector(init0_v, num_bits_init0); 
+    SendVector(init0_v, num_bits_init0);
 }
 
 signed char SendInitVectors(void)
 {
-    SendVector(init1_v, num_bits_init1); 
+    SendVector(init1_v, num_bits_init1);
     if ((fIsError = fDetectHiLoTransition())) {
         return(INIT_ERROR);
     }
@@ -293,8 +293,8 @@ signed char SendInitVectors(void)
     if ((fIsError = fDetectHiLoTransition())) {
         return(INIT_ERROR);
     }
-    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);      
-     
+    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
+
     // Send Initialize 3 Vector NOTE: the proper vector based on Vdd of target
     if(param.targ_voltage == TARGET_VOLTAGE_5V) {
         SendVector(init3_5v, num_bits_init3_5v);          // Target Vdd = 5v
@@ -313,7 +313,7 @@ signed char SendInitVectors(void)
 // fPowerCycleInitializeTargetForISSP()
 // Implements the intialization vectors for the device.
 // The first time fDetectHiLoTransition is called the Clk pin is highZ because
-// the clock is not needed during acquire. 
+// the clock is not needed during acquire.
 // Returns:
 //     0 if successful
 //     INIT_ERROR if timed out on handshake to the device.
@@ -324,9 +324,9 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 
     // Set all pins to highZ to avoid back powering the PSoC through the GPIO
     // protection diodes.
-    SetSCLKHiZ();   
+    SetSCLKHiZ();
     SetSDATAHiZ();
-      
+
     // Turn on power to the target device before other signals
     SetTargetVDDStrong();
     ApplyTargetVDD();
@@ -341,22 +341,22 @@ signed char fPowerCycleInitializeTargetForISSP(void)
     SetSCLKHiZ();
     if ((fIsError = fDetectHiLoTransition())) {
         return(INIT_ERROR);
-    }    
+    }
 
     // Configure the pins for initialization
     SetSDATAHiZ();
     SetSCLKStrong();
     SCLKLow();
 
-    // !!! NOTE: 
+    // !!! NOTE:
     //  The timing spec that requires that the first Init-Vector happen within
     //  1 msec after the reset/power up. For this reason, it is not advisable
-    //  to separate the above RESET_MODE or POWER_CYCLE_MODE code from the 
+    //  to separate the above RESET_MODE or POWER_CYCLE_MODE code from the
     //  Init-Vector instructions below. Doing so could introduce excess delay
     //  and cause the target device to exit ISSP Mode.
 
     // Send Initialization Vectors and detect Hi-Lo transition on SDATA
-    SendVector(init1_v, num_bits_init1); 
+    SendVector(init1_v, num_bits_init1);
     if ((fIsError = fDetectHiLoTransition())) {
         return(INIT_ERROR);
     }
@@ -368,7 +368,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
         return(INIT_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
-     
+
     // Send Initialize 3 Vector NOTE: the proper vector based on Vdd of target
     #ifdef TARGET_VOLTAGE_IS_5V
     SendVector(init3_5v, num_bits_init3_5v);          // Target Vdd = 5v
@@ -384,6 +384,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 }
 
 void setAddress(unsigned char bBankNumber, unsigned char bBlockNumber) {
+    SetBankNumber(bBankNumber);
   SendVector(set_block_number, 11);
 
   // Set the drive here because SendByte() does not
@@ -456,7 +457,7 @@ int8_t getSiliconID(uint8_t * buff) {
   if ((fIsError = fDetectHiLoTransition())) {
     return(SiID_ERROR);
   }
-  SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);     
+  SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 
   //Send Read ID vector and get Target ID
   SendVector(read_id_v, 11);      // Read-MSB Vector is the first 11-Bits
@@ -470,7 +471,7 @@ int8_t getSiliconID(uint8_t * buff) {
 
   RunClock(1);
   SendVector(read_id_v+4, 1);     // 1 bit starting from the 5th character
-  
+
   return 0;
 }
 
@@ -540,16 +541,16 @@ unsigned int  iChecksumData = 0;
     // 64-Bytes are written in this loop.
     bTargetAddress = 0x00;
     bTargetDataPtr = 0x00;
-          
-    while(bTargetDataPtr < TARGET_DATABUFF_LEN) {     
+
+    while(bTargetDataPtr < TARGET_DATABUFF_LEN) {
         bTemp = abTargetDataOUT[bTargetDataPtr];
         iChecksumData += bTemp;
 
-        SendByte(write_byte_start,5);     
+        SendByte(write_byte_start,5);
         SendByte(bTargetAddress, 6);
         SendByte(bTemp, 8);
         SendByte(write_byte_end, 3);
-               
+
         // !!!NOTE:
         // SendByte() uses MSbits, so inc by '4' to put the 0..63 address into
         // the six MSBit locations.
@@ -587,7 +588,7 @@ void SetBankNumber(unsigned char bBankNumber)
 
 // ============================================================================
 // fProgramTargetBlock()
-// Program one block with data that has been loaded into a RAM buffer in the 
+// Program one block with data that has been loaded into a RAM buffer in the
 // target device.
 // Returns:
 //     0 if successful
@@ -627,7 +628,7 @@ void send_checksum_v(void)
     checksum_v[17] = 0xF6;
     checksum_v[26] = 0x40;
 
-    SendVector(checksum_v, num_bits_checksum); 
+    SendVector(checksum_v, num_bits_checksum);
     RunClock(2);
 }
 
@@ -653,12 +654,12 @@ signed char fAccTargetBankChecksum(unsigned int* pAcc, unsigned char block_count
 
     checksum_v[26] = block_count>>1;
     checksum_v[27] |= (block_count&1)<<7;
-    SendVector(checksum_v, num_bits_checksum); 
+    SendVector(checksum_v, num_bits_checksum);
     if ((fIsError = fDetectHiLoTransition())) {
         return(VERIFY_ERROR);
     }
 
-    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);     
+    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 
     //Send Read Checksum vector and get Target Checksum
     SendVector(read_checksum_v, 11);     // first 11-bits is ReadCKSum-MSB
@@ -670,27 +671,27 @@ signed char fAccTargetBankChecksum(unsigned int* pAcc, unsigned char block_count
     *pAcc += bReceiveByte();
     RunClock(1);
     SendVector(read_checksum_v + 3, 1);  // Send the final bit of the command
-    return(PASS);    
-}    
+    return(PASS);
+}
 
 
 // ============================================================================
 // ReStartTarget()
-// After programming, the target PSoC must be reset to take it out of 
+// After programming, the target PSoC must be reset to take it out of
 // programming mode. This routine performs a reset.
 // ============================================================================
 void ReStartTarget(void)
 {
+    // Set all pins to highZ to avoid back powering the PSoC through the GPIO
+    // protection diodes.
+    SetSCLKHiZ();
+    SetSDATAHiZ();
   if(param.prog_mode == RESET_MODE) {
     // Assert XRES, then release, then disable XRES-Enable
     AssertXRES();
     delayMicroseconds(XRES_CLK_DELAY);
     DeassertXRES();
   } else {
-    // Set all pins to highZ to avoid back powering the PSoC through the GPIO
-    // protection diodes.
-    SetSCLKHiZ();   
-    SetSDATAHiZ();
     // Cycle power on the target to cause a reset
     RemoveTargetVDD();
     delayMicroseconds(POWER_CYCLE_DELAY);
@@ -715,16 +716,16 @@ signed char fVerifyTargetBlock(unsigned char bBankNumber, unsigned char bBlockNu
     SetSDATAStrong();
     SendByte(bBlockNumber,8);
     SendByte(set_block_number_end, 3);
-     
+
     SendVector(verify_setup_v, num_bits_verify_setup);
     if ((fIsError = fDetectHiLoTransition())) {
         return(BLOCK_ERROR);
     }
-    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);     
+    SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
 
     bTargetAddress = 0;
     bTargetDataPtr = 0;
-     
+
     while(bTargetDataPtr < TARGET_DATABUFF_LEN) {
         //Send Read Byte vector and then get a byte from Target
         SendVector(read_byte_v, 5);
@@ -742,7 +743,7 @@ signed char fVerifyTargetBlock(unsigned char bBankNumber, unsigned char bBlockNu
         // Test the Byte that was read from the Target against the original
         // value (already in the 64-Byte array "abTargetDataOUT[]"). If it
         // matches, then bump the address & pointer,loop-back and continue.
-        // If it does NOT match abort the loop and return and error.	
+        // If it does NOT match abort the loop and return and error.
         if (bTargetDataIN != abTargetDataOUT[bTargetDataPtr])
             return(BLOCK_ERROR);
 
@@ -761,7 +762,7 @@ signed char fVerifyTargetBlock(unsigned char bBankNumber, unsigned char bBlockNu
 // settings using LoadArrayWithSecurityData(StartAddress,Length,SecurityType).
 // The can be called multiple times with different SecurityTypes as needed for
 // particular Flash Blocks. Or set them all the same using the call below:
-// LoadArrayWithSecurityData(0,SECURITY_BYTES_PER_BANK, 0); 
+// LoadArrayWithSecurityData(0,SECURITY_BYTES_PER_BANK, 0);
 // Returns:
 //     0 if successful
 //     SECURITY_ERROR if timed out on handshake to the device.
@@ -774,13 +775,13 @@ unsigned char bTemp;
     bTargetAddress = 0x00;
     bTargetDataPtr = 0x00;
     SetSDATAStrong();
-    while(bTargetDataPtr < SECURITY_BYTES_PER_BANK) {     
+    while(bTargetDataPtr < SECURITY_BYTES_PER_BANK) {
         bTemp = abTargetDataOUT[bTargetDataPtr];
-        SendByte(write_byte_start,5);     
+        SendByte(write_byte_start,5);
         SendByte(bTargetAddress, 6);
         SendByte(bTemp, 8);
         SendByte(write_byte_end, 3);
-           
+
         // SendBytes() uses MSBits, so increment the address by '4' to put
         // the 0..n address into the six MSBit locations
         bTargetAddress += 4;
@@ -799,12 +800,12 @@ signed char fVerifySecurity(void)
 {
 	//Send the vector to read the security bits
 	SendVector(securityVerification_v, num_bits_securityVerification);
-	
-	//Generate one clock to make M8C core to start executing the instructions 
+
+	//Generate one clock to make M8C core to start executing the instructions
 	//from the test queue
 	SCLKHigh();
 	SCLKLow();
-	
+
 	if ((fIsError = fDetectHiLoTransition())) {
         return(SECURITY_ERROR);
     }
